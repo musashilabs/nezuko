@@ -1,0 +1,16 @@
+target/
+.git/
+.github/
+.githooks/
+.vscode/
+.idea/
+*.md
+!README.md
+docs/
+benches/
+tests/
+*.log
+.env*
+!.env.example
+Dockerfile*
+.dockerignore
