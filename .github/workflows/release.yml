@@ -1,0 +1,55 @@
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish-crate:
+    name: publish to crates.io
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: verify version matches tag
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          crate=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          [ "$tag" = "$crate" ] || { echo "tag $tag ≠ Cargo.toml $crate"; exit 1; }
+      - run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  github-release:
+    name: github release
+    runs-on: ubuntu-latest
+    needs: publish-crate
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: generate notes
+        id: notes
+        run: |
+          prev=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          {
+            echo "notes<<EOF"
+            if [ -n "$prev" ]; then
+              git log --pretty=format:'- %s (%h)' "$prev..HEAD"
+            else
+              git log --pretty=format:'- %s (%h)'
+            fi
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.notes.outputs.notes }}
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}

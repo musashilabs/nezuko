@@ -1,0 +1,10 @@
+avoid-breaking-exported-api = false
+msrv = "1.85.0"
+
+cognitive-complexity-threshold = 25
+too-many-arguments-threshold   = 7
+type-complexity-threshold      = 250
+
+disallowed-methods = [
+    { path = "std::sync::Mutex::lock",   reason = "prefer `parking_lot::Mutex` or an async mutex on hot paths" },
+]

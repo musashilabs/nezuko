@@ -1,0 +1,104 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0            # useless on clean CI, disable for smaller cache
+  CARGO_PROFILE_DEV_DEBUG: 0      # skip debuginfo — significantly faster
+  CARGO_PROFILE_TEST_DEBUG: 0
+  RUSTFLAGS: -D warnings
+  RUSTDOCFLAGS: -D warnings
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Fast fail — fmt is seconds, so gate the rest on it.
+  # -------------------------------------------------------------------------
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: rustfmt }
+      - run: cargo fmt --all -- --check
+
+  # -------------------------------------------------------------------------
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    needs: fmt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy }
+      - uses: Swatinem/rust-cache@v2
+        with: { shared-key: clippy }
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # -------------------------------------------------------------------------
+  test:
+    name: test / ${{ matrix.os }} / ${{ matrix.toolchain }}
+    needs: fmt
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [stable]
+        include:
+          - os: ubuntu-latest
+            toolchain: beta
+          - os: ubuntu-latest
+            toolchain: "1.85.0"   # MSRV
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: test-${{ matrix.os }}-${{ matrix.toolchain }}
+      - uses: taiki-e/install-action@nextest
+      - run: cargo nextest run --all-features --profile ci
+      - name: doc-tests
+        run: cargo test --doc --all-features
+
+  # -------------------------------------------------------------------------
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    needs: fmt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { shared-key: docs }
+      - run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: --cfg docsrs -D warnings
+
+  # -------------------------------------------------------------------------
+  # single gate job for branch protection — instead of listing every matrix
+  # cell in GitHub's required-checks UI, require only this one.
+  # -------------------------------------------------------------------------
+  gate:
+    name: gate
+    if: always()
+    needs: [fmt, clippy, test, docs]
+    runs-on: ubuntu-latest
+    steps:
+      - name: verify all jobs passed
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "one or more jobs failed"; exit 1
+          fi
