@@ -30,6 +30,23 @@ help: ## Print this help
 		/^[a-zA-Z_-]+:.*?##/ { printf "  $(YELLOW)%-18s$(RESET) %s\n", $$1, $$2 } \
 		/^##@/ { printf "\n$(BLUE)%s$(RESET)\n", substr($$0, 5) }' $(MAKEFILE_LIST)
 
+
+.PHONY: hooks
+hooks: ## Point git at .githooks/ (version-controlled hooks)
+	@chmod +x .githooks/*
+	@# make the +x bit persist in git's index so fresh clones inherit it
+	@for h in .githooks/*; do \
+		if git ls-files --error-unmatch "$$h" >/dev/null 2>&1; then \
+			git update-index --chmod=+x "$$h" 2>/dev/null || true; \
+		fi; \
+	done
+	git config core.hooksPath .githooks
+	@echo "$(GREEN)✓ git hooks wired to .githooks/$(RESET)"
+
+.PHONY: setup
+setup: hooks ## Alias for hooks — quick one-shot after cloning
+	@echo "$(GREEN)✓ setup complete — try: git commit$(RESET)"
+
 ##@ Setup
 
 .PHONY: bootstrap
