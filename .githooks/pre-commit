@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; NC='\033[0m'
+step() { printf "${YELLOW}▶ %s${NC}\n" "$*"; }
+ok()   { printf "${GREEN}✓ %s${NC}\n" "$*"; }
+die()  { printf "${RED}✗ %s${NC}\n" "$*" >&2; exit 1; }
+
+
+STAGED_RS=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.rs$' || true)
+[ -z "${STAGED_RS}" ] && { ok "no rust changes staged — skipping"; exit 0; }
+
+
+step "cargo fmt --check"
+cargo fmt --all -- --check || die "run: cargo fmt --all"
+
+
+step "cargo check"
+cargo check --all-targets --quiet || die "cargo check failed"
+
+ok "pre-commit clean"

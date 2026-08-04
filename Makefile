@@ -39,7 +39,7 @@ bootstrap: ## Install all dev tooling and wire up git hooks
 	@if ! command -v cargo-binstall >/dev/null; then \
 		curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash ; \
 	fi
-	cargo binstall -y --no-confirm \
+	cargo binstall --no-confirm \
 		cargo-nextest \
 		cargo-deny    \
 		cargo-audit   \

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+MSG_FILE=$1
+FIRST_LINE=$(head -n1 "$MSG_FILE")
+
+# skip merges / fixups / reverts
+case "$FIRST_LINE" in
+    Merge*|Revert*|fixup!*|squash!*) exit 0 ;;
+esac
+
+PATTERN='^(feat|fix|chore|docs|refactor|perf|test|build|ci|style|revert)(\([a-z0-9._/-]+\))?!?: .{3,}'
+
+if ! [[ "$FIRST_LINE" =~ $PATTERN ]]; then
+    printf '\033[0;31m✗ commit message must be Conventional:\033[0m\n' >&2
+    printf '    <type>(<scope>)?: <subject>\n\n' >&2
+    printf '  types: feat fix chore docs refactor perf test build ci style revert\n' >&2
+    printf '  e.g.  feat(reactor): add epoll wakeup batching\n\n' >&2
+    printf '  got: %s\n' "$FIRST_LINE" >&2
+    exit 1
+fi

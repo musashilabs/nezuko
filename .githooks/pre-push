@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; NC='\033[0m'
+step() { printf "${YELLOW}▶ %s${NC}\n" "$*"; }
+ok()   { printf "${GREEN}✓ %s${NC}\n" "$*"; }
+die()  { printf "${RED}✗ %s${NC}\n" "$*" >&2; exit 1; }
+
+if [ "${NEZUKO_SKIP_PREPUSH:-0}" = "1" ]; then
+    printf "${YELLOW}⚠ skipping pre-push (NEZUKO_SKIP_PREPUSH=1)${NC}\n"
+    exit 0
+fi
+
+step "clippy -D warnings"
+cargo clippy --all-targets --all-features --quiet -- -D warnings \
+    || die "clippy failed"
+
+step "nextest"
+if command -v cargo-nextest >/dev/null; then
+    cargo nextest run --all-features --status-level fail || die "tests failed"
+else
+    cargo test --all-features --quiet || die "tests failed"
+fi
+
+step "doc-tests"
+cargo test --doc --all-features --quiet || die "doc-tests failed"
+
+ok "pre-push clean — pushing"
