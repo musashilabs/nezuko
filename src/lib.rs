@@ -1,5 +1,3 @@
-#![cfg_attr(docsrs, feature(doc_cfg))]
-
 pub mod runtime;
 
 #[derive(Debug, thiserror::Error)]
