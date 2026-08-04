@@ -1,0 +1,18 @@
+# stable options only — nightly-gated ones are commented for reference
+edition            = "2024"
+max_width          = 100
+hard_tabs          = false
+tab_spaces         = 4
+newline_style      = "Unix"
+use_field_init_shorthand = true
+use_try_shorthand        = true
+
+# --- nightly-only (enable if you run `cargo +nightly fmt`) -------------
+# unstable_features         = true
+# imports_granularity       = "Crate"
+# group_imports             = "StdExternalCrate"
+# wrap_comments             = true
+# comment_width             = 100
+# format_code_in_doc_comments = true
+# normalize_comments        = true
+# reorder_impl_items        = true
