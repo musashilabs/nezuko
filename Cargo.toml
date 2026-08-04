@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 criterion = "0.8.2"
+thiserror = "2.0.19"
