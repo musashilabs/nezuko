@@ -1,5 +1,8 @@
-pub mod error;
-pub mod reactor;
-pub mod runtime;
-pub mod task;
-pub mod time;
+#![allow(dead_code)]
+mod error;
+mod reactor;
+mod runtime;
+pub use runtime::{Runtime, spawn};
+mod task;
+mod time;
+pub use time::sleep;
