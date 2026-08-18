@@ -274,6 +274,7 @@ name = "nezuko"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "libc",
  "thiserror",
 ]
 
