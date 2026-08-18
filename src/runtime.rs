@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
-use crate::Result;
+use crate::error;
+
 
 #[derive(Debug)]
 pub struct Runtime {
@@ -8,11 +9,11 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn new() -> Result<Self> {
+    pub fn new() -> error::Result<Self> {
         Ok(Self { _priv: () })
     }
 
-    pub fn block_on<F: core::future::Future>(&self, _fut: F) -> F::Output {
+    pub fn block_on<F: Future>(&self, _fut: F) -> F::Output {
         todo!("wire up the executor")
     }
 }
