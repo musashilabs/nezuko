@@ -34,7 +34,7 @@ impl Wake for AwakeFlag {
     }
 }
 
-pub enum JoinState<T> {
+pub(crate) enum JoinState<T> {
     Unawaited,
     Awaited(Waker),
     Ready(T),
@@ -42,7 +42,7 @@ pub enum JoinState<T> {
 }
 
 pub struct JoinHandle<T> {
-    pub state: Arc<Mutex<JoinState<T>>>,
+    pub(crate) state: Arc<Mutex<JoinState<T>>>,
 }
 
 impl<T> Future for JoinHandle<T> {
@@ -61,7 +61,7 @@ impl<T> Future for JoinHandle<T> {
     }
 }
 
-pub async fn wrap_with_join_state<F: Future>(
+pub(crate) async fn wrap_with_join_state<F: Future>(
     future: F,
     join_state: Arc<Mutex<JoinState<F::Output>>>,
 ) {
