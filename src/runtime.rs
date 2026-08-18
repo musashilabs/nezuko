@@ -14,7 +14,7 @@ use crate::{
 };
 
 thread_local! {
-    static CURRENT: RefCell<Option<Arc<Shared>>> = RefCell::new(None)
+    static CURRENT: RefCell<Option<Arc<Shared>>> = const { RefCell::new(None) }
 }
 
 pub(crate) fn register_sleep(wake_time: Instant, waker: Waker) {
@@ -34,6 +34,26 @@ pub(crate) fn register_sleep(wake_time: Instant, waker: Waker) {
     });
 }
 
+pub fn spawn<F, T>(future: F) -> JoinHandle<T>
+where
+    F: Future<Output = T> + Send + 'static,
+    T: Send + 'static,
+{
+    let join_state = Arc::new(Mutex::new(JoinState::Unawaited));
+
+    let join_handle = JoinHandle {
+        state: Arc::clone(&join_state),
+    };
+
+    CURRENT.with(|c| {
+        let shared = c.borrow().as_ref().expect("spawn outside runtime").clone();
+        // wrap_with_join_state, push to shared.new_tasks, return handle
+        let task = wrap_with_join_state(future, join_state);
+        shared.new_tasks.lock().unwrap().push(Box::pin(task));
+    });
+
+    join_handle
+}
 struct CurrentGuard;
 
 impl Drop for CurrentGuard {
@@ -69,26 +89,6 @@ impl Runtime {
         Ok(Self {
             shared: Arc::new(Shared::new()),
         })
-    }
-
-    pub fn spawn<F, T>(&self, future: F) -> JoinHandle<T>
-    where
-        F: Future<Output = T> + Send + 'static,
-        T: Send,
-    {
-        let join_state = Arc::new(Mutex::new(JoinState::Unawaited));
-
-        let join_handle = JoinHandle {
-            state: Arc::clone(&join_state),
-        };
-
-        self.shared
-            .new_tasks
-            .lock()
-            .unwrap()
-            .push(Box::pin(wrap_with_join_state(future, join_state)));
-
-        join_handle
     }
 
     pub fn block_on<F: Future>(&self, future: F) -> F::Output {
