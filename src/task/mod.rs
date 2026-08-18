@@ -1,8 +1,25 @@
-use std::{pin::Pin, sync::{Arc, Mutex}, task::{Poll, Wake, Waker}};
+use std::{
+    pin::Pin,
+    sync::{Arc, Mutex},
+    task::{Poll, Wake, Waker},
+};
 
 pub type DynFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 pub struct AwakeFlag(Mutex<bool>);
+
+impl AwakeFlag {
+    pub fn new() -> Self {
+        Self(Mutex::new(false))
+    }
+    pub fn check_and_clear(&self) -> bool {
+        let mut set = self.0.lock().unwrap();
+
+        let prev = *set;
+        *set = false;
+        prev
+    }
+}
 
 impl Wake for AwakeFlag {
     fn wake(self: Arc<Self>) {
@@ -37,12 +54,14 @@ impl<T> Future for JoinHandle<T> {
     }
 }
 
-pub async fn wrap_with_join_state<F: Future>(future: F, join_state: Arc<Mutex<JoinState<F::Output>>>) {
-    let value = future.await; // 1. asli future chalao
+pub async fn wrap_with_join_state<F: Future>(
+    future: F,
+    join_state: Arc<Mutex<JoinState<F::Output>>>,
+) {
+    let value = future.await;
     let mut guard = join_state.lock().unwrap();
     if let JoinState::Awaited(waker) = &*guard {
-       
         waker.wake_by_ref();
     }
-    *guard = JoinState::Ready(value); 
+    *guard = JoinState::Ready(value);
 }
