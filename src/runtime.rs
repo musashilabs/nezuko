@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use std::cell::RefCell;
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
@@ -11,6 +12,37 @@ use crate::{
     error,
     task::{AwakeFlag, DynFuture, JoinHandle, JoinState, wrap_with_join_state},
 };
+
+thread_local! {
+    static CURRENT: RefCell<Option<Arc<Shared>>> = RefCell::new(None)
+}
+
+pub(crate) fn register_sleep(wake_time: Instant, waker: Waker) {
+    CURRENT.with(|c| {
+        let borrow = c.borrow();
+        let shared = borrow
+            .as_ref()
+            .expect("sleep called outside of a nezuko runtime");
+
+        shared
+            .wake_times
+            .lock()
+            .unwrap()
+            .entry(wake_time)
+            .or_default()
+            .push(waker);
+    });
+}
+
+struct CurrentGuard;
+
+impl Drop for CurrentGuard {
+    fn drop(&mut self) {
+        CURRENT.with(|c| {
+            *c.borrow_mut() = None;
+        });
+    }
+}
 
 struct Shared {
     new_tasks: Mutex<Vec<DynFuture>>,
@@ -60,6 +92,13 @@ impl Runtime {
     }
 
     pub fn block_on<F: Future>(&self, future: F) -> F::Output {
+        // register this runtime as current for this thread
+        CURRENT.with(|c| {
+            *c.borrow_mut() = Some(Arc::clone(&self.shared));
+        });
+
+        let _guard = CurrentGuard;
+
         let waker = Waker::from(self.shared.awake_flag.clone());
         let mut cx = Context::from_waker(&waker);
         let mut main_task = Box::pin(future);
@@ -70,7 +109,7 @@ impl Runtime {
 
             // whole runtime is done
             if let Poll::Ready(output) = main_task.as_mut().poll(&mut cx) {
-                return output;
+                return output; // guard clear hojega
             }
 
             other_tasks.retain_mut(|task| task.as_mut().poll(&mut cx).is_pending());
