@@ -2,10 +2,10 @@
 
 # nezuko
 
-**a mini-tokio you can read in an afternoon**
+**a rust based async runtime you can read in an afternoon**
 
-[![ci](https://github.com/kuramalabs/nezuko/actions/workflows/ci.yml/badge.svg)](https://github.com/kuramalabs/nezuko/actions/workflows/ci.yml)
-[![audit](https://github.com/kuramalabs/nezuko/actions/workflows/audit.yml/badge.svg)](https://github.com/kuramalabs/nezuko/actions/workflows/audit.yml)
+[![ci](https://github.com/musashilabs/nezuko/actions/workflows/ci.yml/badge.svg)](https://github.com/musashilabs/nezuko/actions/workflows/ci.yml)
+[![audit](https://github.com/musashilabs/nezuko/actions/workflows/audit.yml/badge.svg)](https://github.com/musashilabs/nezuko/actions/workflows/audit.yml)
 [![crates.io](https://img.shields.io/crates/v/nezuko.svg)](https://crates.io/crates/nezuko)
 [![docs.rs](https://img.shields.io/docsrs/nezuko)](https://docs.rs/nezuko)
 [![license](https://img.shields.io/crates/l/nezuko.svg)](#license)
@@ -123,4 +123,4 @@ MSRV is a minor-version change.
 
 ## License
 
-- MIT license ([`LICENSE-MIT`](LICENSE-MIT))
+- MIT license ([`LICENSE-MIT`](LICENSE))
