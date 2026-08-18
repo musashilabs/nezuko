@@ -1,5 +1,15 @@
 <div align="center">
 
+<div style="border-radius: 100%; overflow: hidden; width: 120px; height: 120px;">
+  <img
+    width="120"
+    height="120"
+    alt="nezuko"
+    src="https://github.com/user-attachments/assets/9cd6b00e-d206-49a5-9230-a9f0adca57ff"
+  />
+</div>
+
+
 # nezuko
 
 **a rust based async runtime you can read in an afternoon**
@@ -19,11 +29,6 @@
 compete with `tokio` - it is to make every layer of a runtime (task, waker,
 executor, reactor) small enough to fit in your head.
 
-If you have wondered:
-
-- Where exactly does a `Waker` come from?
-- What does the reactor actually store when it registers an `fd`?
-- How does `spawn` return before the future runs?
 
 Read the source.
 
@@ -40,16 +45,6 @@ fn main() {
 }
 ```
 
-## Layout
-
-```
-src/
-├── lib.rs        # public surface
-├── runtime.rs    # Runtime handle, block_on, spawn
-├── task.rs       # Task, JoinHandle, waker vtable
-├── reactor.rs    # mio-backed I/O driver
-└── sync.rs       # oneshot, mpsc, Notify
-```
 
 ## Development
 
