@@ -9,12 +9,13 @@ use std::{
 
 use crate::{
     error,
-    task::{DynFuture, JoinHandle, JoinState, wrap_with_join_state},
+    task::{AwakeFlag, DynFuture, JoinHandle, JoinState, wrap_with_join_state},
 };
 
 struct Shared {
     new_tasks: Mutex<Vec<DynFuture>>,
     wake_times: Mutex<BTreeMap<Instant, Vec<Waker>>>,
+    awake_flag: Arc<AwakeFlag>,
 }
 
 impl Shared {
@@ -22,6 +23,7 @@ impl Shared {
         Self {
             new_tasks: Mutex::new(Vec::new()),
             wake_times: Mutex::new(BTreeMap::new()),
+            awake_flag: Arc::new(AwakeFlag::default()),
         }
     }
 }
