@@ -21,6 +21,12 @@ impl AwakeFlag {
     }
 }
 
+impl Default for AwakeFlag {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Wake for AwakeFlag {
     fn wake(self: Arc<Self>) {
         *self.0.lock().unwrap() = true;
