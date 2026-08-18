@@ -1,8 +1,11 @@
-use std::{os::fd::AsRawFd, sync::Mutex, task::{Context, Waker}};
+use std::{
+    os::fd::AsRawFd,
+    sync::Mutex,
+    task::{Context, Waker},
+};
 
 pub static POLL_FDS: Mutex<Vec<libc::pollfd>> = Mutex::new(Vec::new());
 pub static POLL_WAKERS: Mutex<Vec<Waker>> = Mutex::new(Vec::new());
-
 
 pub fn register_pollfd(context: &mut Context, fd: &impl AsRawFd, events: libc::c_short) {
     let mut poll_fds = POLL_FDS.lock().unwrap();
