@@ -12,12 +12,13 @@ impl AwakeFlag {
     pub fn new() -> Self {
         Self(Mutex::new(false))
     }
-    pub fn check_and_clear(&self) -> bool {
-        let mut set = self.0.lock().unwrap();
 
-        let prev = *set;
-        *set = false;
-        prev
+    pub fn clear(&self) {
+        *self.0.lock().unwrap() = false;
+    }
+
+    pub fn is_set(&self) -> bool {
+        *self.0.lock().unwrap()
     }
 }
 
