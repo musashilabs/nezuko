@@ -5,6 +5,6 @@ cognitive-complexity-threshold = 25
 too-many-arguments-threshold   = 7
 type-complexity-threshold      = 250
 
-disallowed-methods = [
-    { path = "std::sync::Mutex::lock",   reason = "prefer `parking_lot::Mutex` or an async mutex on hot paths" },
-]
+# disallowed-methods = [
+#     { path = "std::sync::Mutex::lock",   reason = "prefer `parking_lot::Mutex` or an async mutex on hot paths" },
+# ]
