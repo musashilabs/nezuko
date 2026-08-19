@@ -5,6 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use crate::runtime::Handle;
 pub struct Sleep {
     wake_time: Instant,
 }
@@ -21,7 +22,7 @@ impl Future for Sleep {
         if Instant::now() >= self.wake_time {
             Poll::Ready(())
         } else {
-            crate::runtime::register_sleep(self.wake_time, context.waker().clone());
+            Handle::current().register_sleep(self.wake_time, context.waker().clone());
             Poll::Pending
         }
     }

@@ -6,14 +6,14 @@ use std::task::Waker;
 use std::time::Instant;
 
 pub(crate) struct Shared {
-    pub new_tasks: Mutex<Vec<DynFuture>>,
-    pub wake_times: Mutex<BTreeMap<Instant, Vec<Waker>>>,
-    pub awake_flag: Arc<AwakeFlag>,
-    pub reactor: Mutex<Reactor>,
+    pub(crate) new_tasks: Mutex<Vec<DynFuture>>,
+    pub(crate) wake_times: Mutex<BTreeMap<Instant, Vec<Waker>>>,
+    pub(crate) awake_flag: Arc<AwakeFlag>,
+    pub(crate) reactor: Mutex<Reactor>,
 }
 
 impl Shared {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             new_tasks: Mutex::new(Vec::new()),
             wake_times: Mutex::new(BTreeMap::new()),

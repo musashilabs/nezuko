@@ -6,7 +6,7 @@ use std::{
     task::Poll,
 };
 
-use crate::runtime::register_io;
+use crate::runtime::Handle;
 
 /// Async accept: wait for an incoming connection.
 pub async fn accept(listener: &mut TcpListener) -> io::Result<(TcpStream, SocketAddr)> {
@@ -16,7 +16,11 @@ pub async fn accept(listener: &mut TcpListener) -> io::Result<(TcpStream, Socket
             Poll::Ready(Ok((stream, addr)))
         }
         Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
-            register_io(listener.as_raw_fd(), libc::POLLIN, context.waker().clone());
+            Handle::current().register_io(
+                listener.as_raw_fd(),
+                libc::POLLIN,
+                context.waker().clone(),
+            );
             Poll::Pending
         }
         Err(e) => Poll::Ready(Err(e)),
@@ -34,7 +38,11 @@ pub async fn write_all(mut buf: &[u8], stream: &mut TcpStream) -> io::Result<()>
                 }
                 Ok(n) => buf = &buf[n..],
                 Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    register_io(stream.as_raw_fd(), libc::POLLOUT, context.waker().clone());
+                    Handle::current().register_io(
+                        stream.as_raw_fd(),
+                        libc::POLLOUT,
+                        context.waker().clone(),
+                    );
                     return Poll::Pending;
                 }
                 Err(e) => return Poll::Ready(Err(e)),
@@ -54,7 +62,11 @@ pub async fn print_all(stream: &mut TcpStream) -> io::Result<()> {
                 Ok(0) => return Poll::Ready(Ok(())), // EOF
                 Ok(n) => io::stdout().write_all(&buf[..n])?,
                 Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    register_io(stream.as_raw_fd(), libc::POLLIN, context.waker().clone());
+                    Handle::current().register_io(
+                        stream.as_raw_fd(),
+                        libc::POLLIN,
+                        context.waker().clone(),
+                    );
                     return Poll::Pending;
                 }
                 Err(e) => return Poll::Ready(Err(e)),
