@@ -15,7 +15,7 @@ use std::{
 };
 
 thread_local! {
-    static CURRENT: RefCell<Option<Arc<Shared>>> = const { RefCell::new(None) }
+    static CURRENT: RefCell<Option<Arc<Shared>>> = const { RefCell::new(None) };
 }
 
 pub(crate) fn register_sleep(wake_time: Instant, waker: Waker) {
@@ -124,14 +124,30 @@ impl Runtime {
                 continue;
             }
 
-            let mut wake_times = self.shared.wake_times.lock().unwrap();
-            let next_wake = wake_times.keys().next().expect("kuch to gadbad h dya");
-            std::thread::sleep(next_wake.saturating_duration_since(Instant::now()));
+            let timeout_ms = {
+                let wake_times = self.shared.wake_times.lock().unwrap();
+                if let Some(&next) = wake_times.keys().next() {
+                    let dur = next.saturating_duration_since(Instant::now());
+                    dur.as_millis() as libc::c_int
+                } else {
+                    -1 // no timer .. block forever
+                }
+            };
 
-            while let Some(entry) = wake_times.first_entry()
-                && *entry.key() <= Instant::now()
+            self.shared
+                .reactor
+                .lock()
+                .unwrap()
+                .poll_and_wake(timeout_ms)
+                .expect("reactor poll failed");
+
             {
-                entry.remove().into_iter().for_each(Waker::wake);
+                let mut wake_times = self.shared.wake_times.lock().unwrap();
+                while let Some(entry) = wake_times.first_entry()
+                    && *entry.key() <= Instant::now()
+                {
+                    entry.remove().into_iter().for_each(Waker::wake);
+                }
             }
         }
     }
