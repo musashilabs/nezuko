@@ -2,7 +2,7 @@
 name = "nezuko"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.95"
+rust-version = "1.97"
 license = "MIT"
 description = "a small async runtime built to be understood - task, waker, executor, and reactor small enough to fit in your head"
 repository = "https://github.com/musashilabs/nezuko"

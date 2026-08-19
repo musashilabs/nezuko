@@ -1,4 +1,8 @@
+# Pins local dev to the MSRV so `cargo build` here fails the same way CI's MSRV
+# job does. rustup honours this file over `rustup default`, INCLUDING in CI —
+# workflows therefore set RUSTUP_TOOLCHAIN explicitly to override it. If you
+# bump this, bump Cargo.toml `rust-version` and ci.yml's MSRV matrix cell too.
 [toolchain]
-channel    = "1.95.0"
+channel    = "1.97.1"
 components = ["rustfmt", "clippy", "rust-src", "rust-analyzer"]
 profile    = "minimal"

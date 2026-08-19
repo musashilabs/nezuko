@@ -1,5 +1,7 @@
 avoid-breaking-exported-api = false
-msrv = "1.95.0"
+# msrv is intentionally NOT set here — clippy inherits `rust-version` from
+# Cargo.toml, which keeps one source of truth. Setting it in both places lets
+# them drift, and clippy then silently prefers this file over the manifest.
 
 cognitive-complexity-threshold = 25
 too-many-arguments-threshold   = 7
