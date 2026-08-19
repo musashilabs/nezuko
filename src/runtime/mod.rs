@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
+mod shared;
+use shared::Shared;
 use std::cell::RefCell;
 use std::{
-    collections::BTreeMap,
     sync::{Arc, Mutex},
     task::{Context, Poll, Waker},
     time::Instant,
@@ -10,7 +11,7 @@ use std::{
 
 use crate::{
     error,
-    task::{AwakeFlag, DynFuture, JoinHandle, JoinState, wrap_with_join_state},
+    task::{DynFuture, JoinHandle, JoinState, wrap_with_join_state},
 };
 
 thread_local! {
@@ -61,22 +62,6 @@ impl Drop for CurrentGuard {
         CURRENT.with(|c| {
             *c.borrow_mut() = None;
         });
-    }
-}
-
-struct Shared {
-    new_tasks: Mutex<Vec<DynFuture>>,
-    wake_times: Mutex<BTreeMap<Instant, Vec<Waker>>>,
-    awake_flag: Arc<AwakeFlag>,
-}
-
-impl Shared {
-    pub fn new() -> Self {
-        Self {
-            new_tasks: Mutex::new(Vec::new()),
-            wake_times: Mutex::new(BTreeMap::new()),
-            awake_flag: Arc::new(AwakeFlag::default()),
-        }
     }
 }
 
