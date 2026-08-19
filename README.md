@@ -19,7 +19,7 @@
 [![crates.io](https://img.shields.io/crates/v/nezuko.svg)](https://crates.io/crates/nezuko)
 [![docs.rs](https://img.shields.io/docsrs/nezuko)](https://docs.rs/nezuko)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![msrv](https://img.shields.io/badge/msrv-1.95-blue)](#msrv)
+[![msrv](https://img.shields.io/badge/msrv-1.97-blue)](#msrv)
 
 </div>
 
@@ -113,7 +113,7 @@ Caching is via `Swatinem/rust-cache@v2`, test runner is `cargo-nextest`.
 
 ## MSRV
 
-The minimum supported Rust version is **1.95**, enforced in CI. Bumping the
+The minimum supported Rust version is **1.97**, enforced in CI. Bumping the
 MSRV is a minor-version change.
 
 ## License
