@@ -1,6 +1,5 @@
 use std::os::fd::RawFd;
 use std::task::Waker;
-
 struct Registration {
     fd: RawFd,
     events: libc::c_short,
@@ -19,6 +18,35 @@ impl Reactor {
 
     pub(crate) fn register(&mut self, fd: RawFd, events: libc::c_short, waker: Waker) {
         self.registrations.push(Registration { fd, events, waker });
+    }
+
+    pub(crate) fn poll_and_wake(&mut self, timeout_ms: libc::c_int) -> Result<(), std::io::Error> {
+        let mut poll_fds: Vec<libc::pollfd> = self
+            .registrations
+            .iter()
+            .map(|reg| libc::pollfd {
+                fd: reg.fd,
+                events: reg.events,
+                revents: 0,
+            })
+            .collect();
+
+        let poll_result = unsafe {
+            libc::poll(
+                poll_fds.as_mut_ptr(),
+                poll_fds.len() as libc::nfds_t,
+                timeout_ms,
+            )
+        };
+        if poll_result < 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+
+        for reg in self.registrations.drain(..) {
+            reg.waker.wake();
+        }
+
+        Ok(())
     }
 }
 // pub static POLL_FDS: Mutex<Vec<libc::pollfd>> = Mutex::new(Vec::new());
