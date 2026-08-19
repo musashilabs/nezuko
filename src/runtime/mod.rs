@@ -7,7 +7,7 @@ use crate::{
 };
 use shared::Shared;
 use std::cell::RefCell;
-use std::os::fd::AsRawFd;
+use std::os::fd::RawFd;
 use std::{
     sync::{Arc, Mutex},
     task::{Context, Poll, Waker},
@@ -35,32 +35,15 @@ pub(crate) fn register_sleep(wake_time: Instant, waker: Waker) {
     });
 }
 
-pub(crate) fn register_pollfd(context: &mut Context, fd: &impl AsRawFd, events: libc::c_short) {
+pub(crate) fn register_io(fd: RawFd, events: libc::c_short, waker: Waker) {
     CURRENT.with(|c| {
         let borrow = c.borrow();
+
         let shared = borrow
             .as_ref()
-            .expect("trying to register fd outside of a nezuko runtime");
+            .expect("I/O attempt outside of a nezuko runtime");
 
-        shared
-            .reactor
-            .lock()
-            .unwrap()
-            .poll_fds
-            .lock()
-            .unwrap()
-            .push(libc::pollfd {
-                fd: fd.as_raw_fd(),
-                events,
-                revents: 0,
-            });
-
-        shared
-            .reactor
-            .lock()
-            .unwrap()
-            .poll_wakers
-            .push(context.waker().clone())
+        shared.reactor.lock().unwrap().register(fd, events, waker);
     });
 }
 

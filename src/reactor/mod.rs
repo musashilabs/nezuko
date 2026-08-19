@@ -1,19 +1,25 @@
-use std::{sync::Mutex, task::Waker};
+use std::os::fd::RawFd;
+use std::task::Waker;
 
+struct Registration {
+    fd: RawFd,
+    events: libc::c_short,
+    waker: Waker,
+}
 pub(crate) struct Reactor {
-    pub poll_fds: Mutex<Vec<libc::pollfd>>,
-    pub poll_wakers: Vec<Waker>,
+    registrations: Vec<Registration>,
 }
 
 impl Reactor {
-    pub fn new() -> Self {
-        Self {
-            poll_fds: Mutex::new(Vec::new()),
-            poll_wakers: Vec::new(),
+    pub(crate) fn new() -> Self {
+        Reactor {
+            registrations: Vec::new(),
         }
     }
 
-    // pub fn register_poll_fds
+    pub(crate) fn register(&mut self, fd: RawFd, events: libc::c_short, waker: Waker) {
+        self.registrations.push(Registration { fd, events, waker });
+    }
 }
 // pub static POLL_FDS: Mutex<Vec<libc::pollfd>> = Mutex::new(Vec::new());
 // pub static POLL_WAKERS: Mutex<Vec<Waker>> = Mutex::new(Vec::new());
