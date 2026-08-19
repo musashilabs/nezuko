@@ -2,8 +2,18 @@
 name = "nezuko"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+description = "a small async runtime built to be understood - task, waker, executor, and reactor small enough to fit in your head"
+repository = "https://github.com/musashilabs/nezuko"
 
 [dependencies]
-criterion = "0.8.2"
 thiserror = "2.0.19"
 libc = "0.2.186"
+
+[dev-dependencies]
+criterion = "0.8.2"
+
+[[bench]]
+name = "runtime"
+harness = false
