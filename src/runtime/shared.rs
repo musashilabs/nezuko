@@ -1,3 +1,4 @@
+use crate::reactor::Reactor;
 use crate::task::{AwakeFlag, DynFuture};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
@@ -8,6 +9,7 @@ pub(crate) struct Shared {
     pub new_tasks: Mutex<Vec<DynFuture>>,
     pub wake_times: Mutex<BTreeMap<Instant, Vec<Waker>>>,
     pub awake_flag: Arc<AwakeFlag>,
+    pub reactor: Mutex<Reactor>,
 }
 
 impl Shared {
@@ -16,6 +18,7 @@ impl Shared {
             new_tasks: Mutex::new(Vec::new()),
             wake_times: Mutex::new(BTreeMap::new()),
             awake_flag: Arc::new(AwakeFlag::default()),
+            reactor: Mutex::new(Reactor::new()),
         }
     }
 }

@@ -1,17 +1,17 @@
 #![allow(dead_code)]
 
 mod shared;
+use crate::{
+    error,
+    task::{DynFuture, JoinHandle, JoinState, wrap_with_join_state},
+};
 use shared::Shared;
 use std::cell::RefCell;
+use std::os::fd::AsRawFd;
 use std::{
     sync::{Arc, Mutex},
     task::{Context, Poll, Waker},
     time::Instant,
-};
-
-use crate::{
-    error,
-    task::{DynFuture, JoinHandle, JoinState, wrap_with_join_state},
 };
 
 thread_local! {
@@ -32,6 +32,35 @@ pub(crate) fn register_sleep(wake_time: Instant, waker: Waker) {
             .entry(wake_time)
             .or_default()
             .push(waker);
+    });
+}
+
+pub(crate) fn register_pollfd(context: &mut Context, fd: &impl AsRawFd, events: libc::c_short) {
+    CURRENT.with(|c| {
+        let borrow = c.borrow();
+        let shared = borrow
+            .as_ref()
+            .expect("trying to register fd outside of a nezuko runtime");
+
+        shared
+            .reactor
+            .lock()
+            .unwrap()
+            .poll_fds
+            .lock()
+            .unwrap()
+            .push(libc::pollfd {
+                fd: fd.as_raw_fd(),
+                events,
+                revents: 0,
+            });
+
+        shared
+            .reactor
+            .lock()
+            .unwrap()
+            .poll_wakers
+            .push(context.waker().clone())
     });
 }
 
