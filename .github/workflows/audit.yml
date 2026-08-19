@@ -27,6 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # audit-check builds cargo-audit from source, so it needs a toolchain new
+      # enough for cargo-audit's own deps — not our MSRV. The runner image lags
+      # (1.95), and kstring (via cargo-audit 0.22) requires 1.96.
+      - uses: dtolnay/rust-toolchain@stable
       - uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
