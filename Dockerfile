@@ -1,4 +1,4 @@
-ARG RUST_VERSION=1.95.0
+ARG RUST_VERSION=1.97.1
 ARG APP_NAME=nezuko
 
 FROM rust:${RUST_VERSION}-slim-bookworm AS chef
