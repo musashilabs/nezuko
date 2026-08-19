@@ -18,7 +18,7 @@
 [![audit](https://github.com/musashilabs/nezuko/actions/workflows/audit.yml/badge.svg)](https://github.com/musashilabs/nezuko/actions/workflows/audit.yml)
 [![crates.io](https://img.shields.io/crates/v/nezuko.svg)](https://crates.io/crates/nezuko)
 [![docs.rs](https://img.shields.io/docsrs/nezuko)](https://docs.rs/nezuko)
-[![license](https://img.shields.io/crates/l/nezuko.svg)](#license)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![msrv](https://img.shields.io/badge/msrv-1.95-blue)](#msrv)
 
 </div>
@@ -101,7 +101,7 @@ Bypass pre-push in a pinch: `NEZUKO_SKIP_PREPUSH=1 git push`.
 
 Three workflows under `.github/workflows/`:
 
-- **ci.yml** — fmt, clippy, matrix test (Linux/macOS/Windows × stable/beta/MSRV),
+- **ci.yml** — fmt, clippy, matrix test (Linux/macOS × stable/beta/MSRV),
   docs. A single `gate` job aggregates results so branch protection needs one
   required check.
 - **audit.yml** — `cargo audit` and `cargo deny` (advisories/bans/licenses/sources
@@ -118,4 +118,4 @@ MSRV is a minor-version change.
 
 ## License
 
-- MIT license ([`LICENSE-MIT`](LICENSE))
+- MIT license ([`LICENSE`](LICENSE))
