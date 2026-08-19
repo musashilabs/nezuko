@@ -19,6 +19,13 @@ env:
   RUSTFLAGS: -D warnings
   RUSTDOCFLAGS: -D warnings
 
+# NOTE ON TOOLCHAIN SELECTION
+# rust-toolchain.toml pins 1.97.1 for local dev, and rustup honours that file
+# over `rustup default` — so installing a toolchain here is NOT enough to use
+# it. Every job must set RUSTUP_TOOLCHAIN, which is the only thing that
+# overrides the pin. Without it the whole matrix silently collapses onto the
+# pinned toolchain and the stable/beta cells test nothing.
+
 jobs:
   # -------------------------------------------------------------------------
   # Fast fail — fmt is seconds, so gate the rest on it.
@@ -26,6 +33,8 @@ jobs:
   fmt:
     name: fmt
     runs-on: ubuntu-latest
+    env:
+      RUSTUP_TOOLCHAIN: stable
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -37,13 +46,15 @@ jobs:
     name: clippy
     runs-on: ubuntu-latest
     needs: fmt
+    env:
+      RUSTUP_TOOLCHAIN: stable
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy }
       - uses: Swatinem/rust-cache@v2
         with: { shared-key: clippy }
-      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo clippy --all-targets --all-features --locked -- -D warnings
 
   # -------------------------------------------------------------------------
   test:
@@ -61,8 +72,10 @@ jobs:
           - os: ubuntu-latest
             toolchain: beta
           - os: ubuntu-latest
-            toolchain: "1.95.0" # MSRV
+            toolchain: "1.97.0" # MSRV — keep in sync with Cargo.toml rust-version
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.toolchain }}
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@master
@@ -72,21 +85,25 @@ jobs:
         with:
           shared-key: test-${{ matrix.os }}-${{ matrix.toolchain }}
       - uses: taiki-e/install-action@nextest
-      - run: cargo nextest run --all-features --profile ci
+      - name: verify active toolchain
+        run: rustc -vV
+      - run: cargo nextest run --all-features --locked --profile ci
       - name: doc-tests
-        run: cargo test --doc --all-features
+        run: cargo test --doc --all-features --locked
 
   # -------------------------------------------------------------------------
   docs:
     name: docs
     runs-on: ubuntu-latest
     needs: fmt
+    env:
+      RUSTUP_TOOLCHAIN: stable
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with: { shared-key: docs }
-      - run: cargo doc --no-deps --all-features
+      - run: cargo doc --no-deps --all-features --locked
         env:
           RUSTDOCFLAGS: --cfg docsrs -D warnings
 
@@ -102,6 +119,6 @@ jobs:
     steps:
       - name: verify all jobs passed
         run: |
-          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" == "true" ]]; then
             echo "one or more jobs failed"; exit 1
           fi

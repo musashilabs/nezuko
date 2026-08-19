@@ -22,19 +22,27 @@ permissions:
 
 jobs:
   # -------------------------------------------------------------------------
+  # audit-check builds cargo-audit from source, so it needs a toolchain new
+  # enough for cargo-audit's OWN dependencies — which has nothing to do with
+  # our MSRV. rust-toolchain.toml pins the MSRV and rustup honours that over
+  # `rustup default`, so RUSTUP_TOOLCHAIN is what actually selects stable here.
+  # Without it the build dies on kstring 2.0.4, which requires 1.96.
+  # -------------------------------------------------------------------------
   audit:
     name: cargo audit
     runs-on: ubuntu-latest
+    env:
+      RUSTUP_TOOLCHAIN: stable
     steps:
       - uses: actions/checkout@v7
-      # audit-check builds cargo-audit from source, so it needs a toolchain new
-      # enough for cargo-audit's own deps — not our MSRV. The runner image lags
-      # (1.95), and kstring (via cargo-audit 0.22) requires 1.96.
       - uses: dtolnay/rust-toolchain@stable
       - uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  # -------------------------------------------------------------------------
+  # cargo-deny-action ships a prebuilt binary — no source build, so it needs no
+  # toolchain of its own and is unaffected by the pin above.
   # -------------------------------------------------------------------------
   deny:
     name: cargo deny (${{ matrix.checks }})
