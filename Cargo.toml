@@ -4,8 +4,22 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.97"
 license = "MIT"
-description = "a small async runtime built to be understood - task, waker, executor, and reactor small enough to fit in your head"
+description = "A mini async runtime for writing reliable applications with Rust."
 repository = "https://github.com/musashilabs/nezuko"
+documentation = "https://docs.rs/nezuko"
+readme = "README.md"
+keywords = ["async", "runtime", "executor", "futures", "reactor"]
+categories = ["asynchronous", "concurrency", "network-programming"]
+exclude = [
+    ".github/",
+    ".githooks/",
+    ".config/",
+    "Makefile",
+    "clippy.toml",
+    "deny.toml",
+    "rustfmt.toml",
+    "rust-toolchain.toml",
+]
 
 [dependencies]
 thiserror = "2.0.19"
