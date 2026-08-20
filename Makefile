@@ -174,15 +174,3 @@ ci: fmt-check clippy deny audit test test-doc ## Everything CI runs, locally
 watch: 
 	$(CARGO) watch -x check -x 'nextest run'
 
-##@ Docker
-
-IMAGE ?= nezuko
-TAG   ?= dev
-
-.PHONY: docker-build
-docker-build: 
-	docker build -t $(IMAGE):$(TAG) .
-
-.PHONY: docker-run
-docker-run:
-	docker run --rm -it $(IMAGE):$(TAG)
