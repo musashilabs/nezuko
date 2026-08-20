@@ -33,6 +33,12 @@ impl Handle {
         })
     }
 
+    /// Wake runtime's reactor
+    /// Called after spawning/waking from another thread
+    pub(crate) fn wake(&self) {
+        let _ = self.shared.reactor.lock().unwrap().wakeup_trigger();
+    }
+
     pub(crate) fn enter(&self) -> EnterGuard {
         CURRENT.with(|c| {
             *c.borrow_mut() = Some(self.clone());

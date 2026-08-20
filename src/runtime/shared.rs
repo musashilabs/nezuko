@@ -1,6 +1,7 @@
 use crate::reactor::Reactor;
 use crate::task::{AwakeFlag, DynFuture};
 use std::collections::BTreeMap;
+use std::io;
 use std::sync::{Arc, Mutex};
 use std::task::Waker;
 use std::time::Instant;
@@ -13,12 +14,12 @@ pub(crate) struct Shared {
 }
 
 impl Shared {
-    pub(crate) fn new() -> Self {
-        Self {
+    pub(crate) fn new() -> io::Result<Self> {
+        Ok(Self {
             new_tasks: Mutex::new(Vec::new()),
             wake_times: Mutex::new(BTreeMap::new()),
             awake_flag: Arc::new(AwakeFlag::default()),
-            reactor: Mutex::new(Reactor::new()),
-        }
+            reactor: Mutex::new(Reactor::new()?),
+        })
     }
 }

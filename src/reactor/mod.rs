@@ -1,5 +1,8 @@
+use crate::wakeup::Wakeup;
+use std::io;
 use std::os::fd::RawFd;
 use std::task::Waker;
+
 struct Registration {
     fd: RawFd,
     events: libc::c_short,
@@ -7,17 +10,23 @@ struct Registration {
 }
 pub(crate) struct Reactor {
     registrations: Vec<Registration>,
+    wakeup: Wakeup,
 }
 
 impl Reactor {
-    pub(crate) fn new() -> Self {
-        Reactor {
+    pub(crate) fn new() -> io::Result<Self> {
+        Ok(Reactor {
             registrations: Vec::new(),
-        }
+            wakeup: Wakeup::new()?,
+        })
     }
 
     pub(crate) fn register(&mut self, fd: RawFd, events: libc::c_short, waker: Waker) {
         self.registrations.push(Registration { fd, events, waker });
+    }
+
+    pub(crate) fn wakeup_trigger(&self) -> std::io::Result<()> {
+        self.wakeup.trigger()
     }
 
     pub(crate) fn poll_and_wake(&mut self, timeout_ms: libc::c_int) -> Result<(), std::io::Error> {
@@ -31,6 +40,12 @@ impl Reactor {
             })
             .collect();
 
+        poll_fds.push(libc::pollfd {
+            fd: self.wakeup.read_fd(),
+            events: libc::POLLIN,
+            revents: 0,
+        });
+
         let poll_result = unsafe {
             libc::poll(
                 poll_fds.as_mut_ptr(),
@@ -38,9 +53,12 @@ impl Reactor {
                 timeout_ms,
             )
         };
+
         if poll_result < 0 {
             return Err(std::io::Error::last_os_error());
         }
+        // drain wakeup fd so it does not get called again
+        self.wakeup.clear();
 
         for reg in self.registrations.drain(..) {
             reg.waker.wake();

@@ -3,13 +3,11 @@
 mod handle;
 mod shared;
 
-use crate::{
-    error,
-    task::{DynFuture, JoinHandle},
-};
+use crate::task::{DynFuture, JoinHandle};
 pub use handle::Handle;
 use shared::Shared;
 use std::{
+    io,
     sync::Arc,
     task::{Context, Poll, Waker},
     time::Instant,
@@ -20,8 +18,8 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn new() -> error::Result<Self> {
-        let shared = Arc::new(Shared::new());
+    pub fn new() -> io::Result<Self> {
+        let shared = Arc::new(Shared::new()?);
         Ok(Runtime {
             handle: Handle::new(shared),
         })
