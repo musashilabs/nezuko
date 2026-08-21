@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::runtime::Shared;
-use crate::task::{JoinHandle, JoinState, wrap_with_join_state};
+use crate::task::{JoinHandle, JoinState, Task, wrap_with_join_state};
 
 thread_local! {
     static CURRENT: RefCell<Option<Handle>> = const { RefCell::new(None) };
@@ -33,10 +33,8 @@ impl Handle {
         })
     }
 
-    /// Wake runtime's reactor
-    /// Called after spawning/waking from another thread
     pub(crate) fn wake(&self) {
-        let _ = self.shared.reactor.lock().unwrap().wakeup_trigger();
+        let _ = self.shared.reactor.wakeup_trigger();
     }
 
     pub(crate) fn enter(&self) -> EnterGuard {
@@ -54,14 +52,12 @@ impl Handle {
             .entry(wake_time)
             .or_default()
             .push(waker);
+
+        let _ = self.shared.reactor.wakeup_trigger();
     }
 
     pub(crate) fn register_io(&self, fd: RawFd, events: libc::c_short, waker: Waker) {
-        self.shared
-            .reactor
-            .lock()
-            .unwrap()
-            .register(fd, events, waker);
+        self.shared.reactor.register(fd, events, waker);
     }
 
     pub(crate) fn spawn<F, T>(&self, future: F) -> JoinHandle<T>
@@ -74,7 +70,7 @@ impl Handle {
             state: Arc::clone(&join_state),
         };
         let task = wrap_with_join_state(future, join_state);
-        self.shared.new_tasks.lock().unwrap().push(Box::pin(task));
+        Task::spawn(Box::pin(task), &self.shared.queue);
         join_handle
     }
 
