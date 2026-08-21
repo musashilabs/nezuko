@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::sync::Condvar;
 use std::task::Context;
 use std::{
     pin::Pin,
@@ -6,18 +7,38 @@ use std::{
     task::{Poll, Wake, Waker},
 };
 
+pub(crate) struct Queue {
+    tasks: Mutex<VecDeque<Arc<Task>>>,
+    ready: Condvar,
+}
+impl Queue {
+    pub(crate) fn push(&self, task: Arc<Task>) {
+        self.tasks.lock().unwrap().push_back(task);
+        self.ready.notify_one();
+    }
+    pub(crate) fn pop(&self) -> Arc<Task> {
+        let mut tasks = self.tasks.lock().unwrap();
+        loop {
+            if let Some(task) = tasks.pop_front() {
+                return task;
+            }
+            tasks = self.ready.wait(tasks).unwrap();
+        }
+    }
+}
+
 pub type DynFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 
-type TaskQueue = Arc<Mutex<VecDeque<Arc<Task>>>>;
+pub(crate) type TaskQueue = Arc<Queue>;
 
-struct Task {
-    future: Mutex<DynFuture>,
-    queue: TaskQueue,
+pub(crate) struct Task {
+    pub(crate) future: Mutex<DynFuture>,
+    pub(crate) queue: TaskQueue,
 }
 
 impl Task {
     fn schedule(self: &Arc<Self>) {
-        self.queue.lock().unwrap().push_back(self.clone());
+        self.queue.push(self.clone())
     }
 
     fn spawn(future: DynFuture, queue: &TaskQueue) {
@@ -28,7 +49,7 @@ impl Task {
 
         task.schedule();
     }
-    fn poll(self: &Arc<Self>) {
+    pub(crate) fn poll(self: &Arc<Self>) {
         let waker = Waker::from(self.clone());
         let mut cx = Context::from_waker(&waker);
         let mut future = self.future.lock().unwrap();
