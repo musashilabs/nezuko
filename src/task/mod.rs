@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+use std::task::Context;
 use std::{
     pin::Pin,
     sync::{Arc, Mutex},
@@ -6,33 +8,68 @@ use std::{
 
 pub type DynFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 
-pub struct AwakeFlag(Mutex<bool>);
+type TaskQueue = Arc<Mutex<VecDeque<Arc<Task>>>>;
 
-impl AwakeFlag {
-    pub fn new() -> Self {
-        Self(Mutex::new(false))
+struct Task {
+    future: Mutex<DynFuture>,
+    queue: TaskQueue,
+}
+
+impl Task {
+    fn schedule(self: &Arc<Self>) {
+        self.queue.lock().unwrap().push_back(self.clone());
     }
 
-    pub fn clear(&self) {
-        *self.0.lock().unwrap() = false;
-    }
+    fn spawn(future: DynFuture, queue: &TaskQueue) {
+        let task = Arc::new(Task {
+            future: Mutex::new(future),
+            queue: queue.clone(),
+        });
 
-    pub fn is_set(&self) -> bool {
-        *self.0.lock().unwrap()
+        task.schedule();
+    }
+    fn poll(self: &Arc<Self>) {
+        let waker = Waker::from(self.clone());
+        let mut cx = Context::from_waker(&waker);
+        let mut future = self.future.lock().unwrap();
+
+        let _ = future.as_mut().poll(&mut cx);
     }
 }
 
-impl Default for AwakeFlag {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Wake for AwakeFlag {
+impl Wake for Task {
     fn wake(self: Arc<Self>) {
-        *self.0.lock().unwrap() = true;
+        self.schedule();
     }
 }
+//
+// pub struct AwakeFlag(Mutex<bool>);
+//
+// impl AwakeFlag {
+//     pub fn new() -> Self {
+//         Self(Mutex::new(false))
+//     }
+//
+//     pub fn clear(&self) {
+//         *self.0.lock().unwrap() = false;
+//     }
+//
+//     pub fn is_set(&self) -> bool {
+//         *self.0.lock().unwrap()
+//     }
+// }
+//
+// impl Default for AwakeFlag {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
+//
+// impl Wake for AwakeFlag {
+//     fn wake(self: Arc<Self>) {
+//         *self.0.lock().unwrap() = true;
+//     }
+// }
 
 pub(crate) enum JoinState<T> {
     Unawaited,
