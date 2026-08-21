@@ -12,6 +12,12 @@ pub(crate) struct Queue {
     ready: Condvar,
 }
 impl Queue {
+    pub fn new() -> Self {
+        Self {
+            tasks: Mutex::new(VecDeque::new()),
+            ready: Condvar::new(),
+        }
+    }
     pub(crate) fn push(&self, task: Arc<Task>) {
         self.tasks.lock().unwrap().push_back(task);
         self.ready.notify_one();
@@ -41,7 +47,7 @@ impl Task {
         self.queue.push(self.clone())
     }
 
-    fn spawn(future: DynFuture, queue: &TaskQueue) {
+    pub(crate) fn spawn(future: DynFuture, queue: &TaskQueue) {
         let task = Arc::new(Task {
             future: Mutex::new(future),
             queue: queue.clone(),
