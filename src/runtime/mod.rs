@@ -5,7 +5,7 @@ mod shared;
 mod worker;
 use crate::channel::oneshot;
 use crate::runtime::worker::run_worker;
-use crate::task::{JoinHandle, Task};
+use crate::task::{JoinHandle, Task, catch_unwind};
 pub use handle::Handle;
 use shared::Shared;
 use std::{io, sync::Arc, task::Waker, time::Instant};
@@ -44,13 +44,17 @@ impl Runtime {
         let (tx, rx) = oneshot::channel();
 
         let wrapped = async move {
-            let output = future.await;
-            tx.send(output);
+            // Send the panic rather than unwinding on a worker thread, which
+            // would leave `recv_blocking` below waiting forever.
+            tx.send(catch_unwind(future).await);
         };
 
         Task::spawn(Box::pin(wrapped), &self.handle.shared().queue);
 
-        rx.recv_blocking()
+        match rx.recv_blocking() {
+            Ok(output) => output,
+            Err(payload) => std::panic::resume_unwind(payload),
+        }
     }
 }
 
